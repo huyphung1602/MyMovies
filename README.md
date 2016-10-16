@@ -19,6 +19,7 @@ The following **additional** features are implemented:
 
 - [x] User can chose the movies from 2 categories Now Playing and Top Rated.
 - [x] Created my own beauty UI and add the rating for each movie.
+- [x] Add a search bar. (med)
 
 ## Video Walkthrough 
 
