@@ -26,7 +26,8 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
     let reachability = Reachability()!
     
     // Initialize a UIRefreshControl
-    let refreshControl = UIRefreshControl()
+    let refreshControlTable = UIRefreshControl()
+    let refreshControlCollect = UIRefreshControl()
     
     var loadCheckPoint = true
     var refreshControlFirstTime = false
@@ -82,14 +83,21 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
             print("could not start reachability notifier")
         }
         
-        refreshControl.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
-        // Add refresh control to table view
-        tableView.insertSubview(refreshControl, at: 0)
+        refreshControlTable.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
+        // Add refresh control to table view or grid view
+        tableView.insertSubview(refreshControlTable, at: 0)
+        
+        refreshControlCollect.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
+        // Add refresh control to table view or grid view
+        collectionView.insertSubview(refreshControlCollect, at: 0)
+        
         refreshControlFirstTime = true
         
         if loadCheckPoint == false {
-            refreshControl.endRefreshing()
-            refreshControl.removeFromSuperview()
+            refreshControlTable.endRefreshing()
+            refreshControlTable.removeFromSuperview()
+            refreshControlCollect.endRefreshing()
+            refreshControlCollect.removeFromSuperview()
         }
         
     }
@@ -102,32 +110,53 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         if reachability.isReachable {
             if reachability.isReachableViaWiFi {
                 print("Reachable via WiFi")
+                
                 if self.loadCheckPoint == false {
                     loadMovie()
                     loadCheckPoint = true
                 }
+                
                 networkErrorView.isHidden = true
-                refreshControl.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
-                // Add refresh control to table view
-                tableView.insertSubview(refreshControl, at: 0)
+                
+                refreshControlTable.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
+                // Add refresh control to table view or grid view
+                tableView.insertSubview(refreshControlTable, at: 0)
+                
+                refreshControlCollect.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
+                // Add refresh control to table view or grid view
+                collectionView.insertSubview(refreshControlCollect, at: 0)
+                
             } else {
                 print("Reachable via Cellular")
+                
                 if self.loadCheckPoint == false {
                     loadMovie()
                     loadCheckPoint = true
                 }
-                refreshControl.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
-                // Add refresh control to table view
-                tableView.insertSubview(refreshControl, at: 0)
+                
                 networkErrorView.isHidden = true
+                
+                refreshControlTable.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
+                // Add refresh control to table view or grid view
+                tableView.insertSubview(refreshControlTable, at: 0)
+                
+                refreshControlCollect.addTarget(self, action: #selector(MovieViewController.loadMovie), for: UIControlEvents.valueChanged)
+                // Add refresh control to table view or grid view
+                collectionView.insertSubview(refreshControlCollect, at: 0)
+
+                
             }
         } else {
             print("Network not reachable")
+            
             loadCheckPoint = false
             networkErrorView.isHidden = false
+            
             if refreshControlFirstTime == true {
-                refreshControl.endRefreshing()
-                refreshControl.removeFromSuperview()
+                refreshControlTable.endRefreshing()
+                refreshControlTable.removeFromSuperview()
+                refreshControlCollect.endRefreshing()
+                refreshControlCollect.removeFromSuperview()
                 refreshControlFirstTime = false
             }
         }
@@ -162,7 +191,11 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
                                         //print(self.movies)
                                         self.tableView.reloadData()
                                         self.collectionView.reloadData()
-                                        self.refreshControl.endRefreshing()
+                                        if self.tableView.isHidden == false {
+                                            self.refreshControlTable.endRefreshing()
+                                        } else {
+                                            self.refreshControlCollect.endRefreshing()
+                                        }
                                     }
                                 }
                                 // Hide HUD once the network request comes back (must be done on main UI thread)
