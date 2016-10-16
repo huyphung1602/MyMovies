@@ -11,7 +11,7 @@ import AFNetworking
 import MBProgressHUD
 import ReachabilitySwift
 
-class MovieViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class MovieViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var networkErrorView: UIView!
@@ -29,6 +29,10 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
     var loadCheckPoint = true
     var refreshControlFirstTime = false
     
+    let searchBar = UISearchBar()
+    var filteredArray = [NSDictionary]()
+    var shouldShowSearchResults = false
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -36,6 +40,8 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         tableView.dataSource = self
         tableView.delegate = self
+        
+        createSearchBar()
         
         if reachability.isReachable {
             if reachability.isReachableViaWiFi {
@@ -159,7 +165,12 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return movies.count
+        if shouldShowSearchResults {
+            return filteredArray.count
+        } else {
+            return movies.count
+        }
+        
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -168,31 +179,110 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "movieCell") as! MovieCell
         
-        cell.titleLabel.text = movies[indexPath.row]["title"] as? String
-        cell.overviewLabel.text = movies[indexPath.row]["overview"] as? String
-        
-        // Set the style of vote average value
-        let myFormatter = NumberFormatter()
-        myFormatter.decimalSeparator = "."
-        myFormatter.minimumFractionDigits = 2
-        myFormatter.minimumIntegerDigits  = 1
-        
-        let voteAverageDouble = movies[indexPath.row]["vote_average"] as! Double
-        let voteAverage = myFormatter.string(from: NSNumber(value: voteAverageDouble))
-        let voteCount = String(describing: movies[indexPath.row]["vote_count"]!)
-        var reviewString = " (" + voteCount + " reviews)"
-        if (voteCount == "0") {
-            reviewString = " (No review)"
-        }
-        cell.ratingLabel.text = String(voteAverage!) + reviewString
-        
-        if let posterPath = movies[indexPath.row]["poster_path"] as? String {
-            let posterUrl = URL(string: baseUrl + posterPath)
-            cell.posterView.setImageWith(posterUrl!)
+        if shouldShowSearchResults {
+            cell.titleLabel.text = filteredArray[indexPath.row]["title"] as? String
+            cell.overviewLabel.text = filteredArray[indexPath.row]["overview"] as? String
+            
+            // Set the style of vote average value
+            let myFormatter = NumberFormatter()
+            myFormatter.decimalSeparator = "."
+            myFormatter.minimumFractionDigits = 2
+            myFormatter.minimumIntegerDigits  = 1
+            
+            let voteAverageDouble = filteredArray[indexPath.row]["vote_average"] as! Double
+            let voteAverage = myFormatter.string(from: NSNumber(value: voteAverageDouble))
+            let voteCount = String(describing: filteredArray[indexPath.row]["vote_count"]!)
+            var reviewString = " (" + voteCount + " reviews)"
+            if (voteCount == "0") {
+                reviewString = " (No review)"
+            }
+            cell.ratingLabel.text = String(voteAverage!) + reviewString
+            
+            if let posterPath = filteredArray[indexPath.row]["poster_path"] as? String {
+                let posterUrl = URL(string: baseUrl + posterPath)
+                cell.posterView.setImageWith(posterUrl!)
+            }
+        } else {
+            cell.titleLabel.text = movies[indexPath.row]["title"] as? String
+            cell.overviewLabel.text = movies[indexPath.row]["overview"] as? String
+            
+            // Set the style of vote average value
+            let myFormatter = NumberFormatter()
+            myFormatter.decimalSeparator = "."
+            myFormatter.minimumFractionDigits = 2
+            myFormatter.minimumIntegerDigits  = 1
+            
+            let voteAverageDouble = movies[indexPath.row]["vote_average"] as! Double
+            let voteAverage = myFormatter.string(from: NSNumber(value: voteAverageDouble))
+            let voteCount = String(describing: movies[indexPath.row]["vote_count"]!)
+            var reviewString = " (" + voteCount + " reviews)"
+            if (voteCount == "0") {
+                reviewString = " (No review)"
+            }
+            cell.ratingLabel.text = String(voteAverage!) + reviewString
+            
+            if let posterPath = movies[indexPath.row]["poster_path"] as? String {
+                let posterUrl = URL(string: baseUrl + posterPath)
+                cell.posterView.setImageWith(posterUrl!)
+            }
         }
         
         return cell
         
+    }
+    
+    // Function to create the search bar
+    func createSearchBar () {
+        
+        searchBar.showsCancelButton = true
+        searchBar.placeholder = "Search the movie here"
+        searchBar.delegate = self
+        
+        self.navigationItem.titleView = searchBar
+        
+    }
+    
+    // Function for adding search
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        filteredArray = movies.filter({ (names) -> Bool in
+            
+            // Access the movie Title
+            let tmpTitle = names["title"] as! String
+            
+            // Create the range for both
+            let range = tmpTitle.range(of: searchText, options: NSString.CompareOptions.caseInsensitive)
+            
+            return range != nil
+            
+        })
+        
+        if searchText != "" {
+            shouldShowSearchResults = true
+            self.tableView.reloadData()
+        } else {
+            shouldShowSearchResults = false
+            self.tableView.reloadData()
+        }
+        
+    }
+    
+    // End function for adding search
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        searchBar.endEditing(true)
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        shouldShowSearchResults = true
+        searchBar.endEditing(true)
+        self.tableView.reloadData()
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.endEditing(true)
+        shouldShowSearchResults = false
+        self.tableView.reloadData()
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -207,8 +297,12 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         let nextVC = segue.destination as! DetailViewController
         
         let ip = tableView.indexPathForSelectedRow
-        nextVC.movie = self.movies[(ip?.row)!]
         
+        if shouldShowSearchResults {
+            nextVC.movie = self.filteredArray[(ip?.row)!]
+        } else {
+            nextVC.movie = self.movies[(ip?.row)!]
+        }
     }
     
     // Deinit stop notifier
