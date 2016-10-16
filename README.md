@@ -19,7 +19,8 @@ The following **additional** features are implemented:
 
 - [x] User can chose the movies from 2 categories Now Playing and Top Rated.
 - [x] Created my own beauty UI and add the rating for each movie.
-- [x] Add a search bar. (med)
+- [x] Add a search bar.
+- [x] Implement a UISegmentedControl to switch between a list view and a grid view.
 
 ## Video Walkthrough 
 
