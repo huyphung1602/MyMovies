@@ -11,11 +11,13 @@ import AFNetworking
 import MBProgressHUD
 import ReachabilitySwift
 
-class MovieViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+class MovieViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var networkErrorView: UIView!
-
+    @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var viewControl: UISegmentedControl!
+    
     
     var movies = [NSDictionary]()
     let baseUrl = "https://image.tmdb.org/t/p/w342"
@@ -40,6 +42,12 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         tableView.dataSource = self
         tableView.delegate = self
+        
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        
+        tableView.isHidden = false
+        collectionView.isHidden = true
         
         createSearchBar()
         
@@ -153,6 +161,7 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
                                         self.movies = responseDictionary["results"] as! [NSDictionary]
                                         //print(self.movies)
                                         self.tableView.reloadData()
+                                        self.collectionView.reloadData()
                                         self.refreshControl.endRefreshing()
                                     }
                                 }
@@ -171,6 +180,14 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
             return movies.count
         }
         
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int)  -> Int {
+        if shouldShowSearchResults {
+            return filteredArray.count
+        } else {
+            return movies.count
+        }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -231,6 +248,36 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         
     }
     
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "collectCell", for: indexPath ) as! CollectionViewCell
+        
+        if shouldShowSearchResults {
+            
+            cell.collectTitle.text = filteredArray[indexPath.item]["title"] as? String
+            
+            if let posterPath = filteredArray[indexPath.item]["poster_path"] as? String {
+                let posterUrl = URL(string: baseUrl + posterPath)
+                cell.collectImage.setImageWith(posterUrl!)
+            }
+            
+        } else {
+
+            cell.collectTitle.text = movies[indexPath.item]["title"] as? String
+            
+            if let posterPath = movies[indexPath.item]["poster_path"] as? String {
+                let posterUrl = URL(string: baseUrl + posterPath)
+                cell.collectImage.setImageWith(posterUrl!)
+            }
+        }
+        
+        return cell
+    }
+    
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
     // Function to create the search bar
     func createSearchBar () {
         
@@ -260,9 +307,11 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         if searchText != "" {
             shouldShowSearchResults = true
             self.tableView.reloadData()
+            self.collectionView.reloadData()
         } else {
             shouldShowSearchResults = false
             self.tableView.reloadData()
+            self.collectionView.reloadData()
         }
         
     }
@@ -277,16 +326,32 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         shouldShowSearchResults = true
         searchBar.endEditing(true)
         self.tableView.reloadData()
+        self.collectionView.reloadData()
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.endEditing(true)
         shouldShowSearchResults = false
         self.tableView.reloadData()
+        self.collectionView.reloadData()
     }
     
+    
+    // Function used to deselect the selected row
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    
+    // Function to switch view from grid to list and vice versa
+    @IBAction func switchView(_ sender: AnyObject) {
+        if viewControl.selectedSegmentIndex == 0 {
+            tableView.isHidden = false
+            collectionView.isHidden = true
+        } else {
+            tableView.isHidden = true
+            collectionView.isHidden = false
+        }
     }
     
     // In a storyboard-based application, you will often want to do a little preparation before navigation
@@ -296,13 +361,22 @@ class MovieViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         let nextVC = segue.destination as! DetailViewController
         
-        let ip = tableView.indexPathForSelectedRow
-        
-        if shouldShowSearchResults {
-            nextVC.movie = self.filteredArray[(ip?.row)!]
+        if tableView.isHidden == true {
+            let ipCollect = collectionView.indexPathsForSelectedItems
+            if shouldShowSearchResults {
+                nextVC.movie = self.filteredArray[(ipCollect?.first?.item)!]
+            } else {
+                nextVC.movie = self.movies[(ipCollect?.first?.item)!]
+            }
         } else {
-            nextVC.movie = self.movies[(ip?.row)!]
+            let ipTable = tableView.indexPathForSelectedRow
+            if shouldShowSearchResults {
+                nextVC.movie = self.filteredArray[(ipTable?.row)!]
+            } else {
+                nextVC.movie = self.movies[(ipTable?.row)!]
+            }
         }
+        
     }
     
     // Deinit stop notifier
