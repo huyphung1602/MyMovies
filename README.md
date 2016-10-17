@@ -32,7 +32,7 @@ GIF created with [LiceCap](http://www.cockos.com/licecap/).
 
 ## Notes
 
-- This is my first version, I am still working to improve it.
+- I shall updated the animation to make this apps more beautiful later.
 
 ## License
 
